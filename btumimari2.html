@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamming Error-Correcting Code Simülatörü</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-image: url("images.png");
+    }
+    .container {
+        max-width: 1000px;
+        margin: 50px auto;
+        padding: 50px;
+        border: 2px solid #35012c;
+        border-radius: 10px;
+        background-color: #C7B7A3;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #FF7F11;
+        border-radius: 5px;
+    }
+    button {
+        padding: 10px 20px;
+        background-color: #7C9970;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        align-self: center;
+        }
+    button:hover {
+        background-color: #0056b3;
+    }
+    .output {
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2><font color="#803D3B">Hamming Error-Correcting Code Simülatörü</font></h2>
+    <label for="data">Data Girişinizi yapınız...(4, 8, ya da 16 bit):</label>
+    <input type="text" id="data">
+    <button onclick="calculateHamming()">Hamming Code Hesaplama</button>
+    <button onclick="introduceError()">Hata Oluşturma</button>
+    <div class="output">
+        <label for="hamming">Hamming Code:</label>
+        <input type="text" id="hamming" readonly>
+        <label for="syndrome">Sendrom:</label>
+        <input type="text" id="syndrome" readonly>
+    </div>
+</div>
+<script>
+    function calculateHamming() {
+        var data = document.getElementById("data").value;
+        if (!(data.length == 4 || data.length == 8 || data.length == 16)) {
+            alert("Verinizin uzunluğu 4 , 8 ya da 16 olmalıdır.");
+            return;
+        }
+
+        var hammingCode = calculateParityBits(data);
+        document.getElementById("hamming").value = hammingCode;
+    }
+
+    function calculateParityBits(data) {
+        var n = data.length;
+        var m = 0;
+        while (Math.pow(2, m) < n + m + 1) {
+            m++;
+        }
+
+        var result = new Array(n + m).fill(0);
+        var j = 0;
+        for (var i = 0; i < result.length; i++) {
+            if (Math.pow(2, j) - 1 == i) {
+                j++;
+            } else {
+                result[i] = parseInt(data.charAt(i - j));
+            }
+        }
+
+        for (var i = 0; i < m; i++) {
+            var parityPos = Math.pow(2, i) - 1;
+            var parity = 0;
+            for (var k = parityPos; k < result.length; k += (parityPos + 1) * 2) {
+                for (var l = k; l < k + parityPos + 1 && l < result.length; l++) {
+                    parity ^= result[l];
+                }
+            }
+            result[parityPos] = parity;
+        }
+
+        return result.join('');
+    }
+
+    function introduceError() {
+        var hammingCode = document.getElementById("hamming").value;
+        if (hammingCode == "") {
+            alert("İlk önce Hamming Code'un çalıştırılması gerekiyor.");
+            return;
+        }
+
+        var errorIndex = Math.floor(Math.random() * hammingCode.length);
+        var originalBit = hammingCode.charAt(errorIndex);
+        var newBit = originalBit == "1" ? "0" : "1";
+        hammingCode = hammingCode.substring(0, errorIndex) + newBit + hammingCode.substring(errorIndex + 1);
+        document.getElementById("hamming").value = hammingCode;
+
+        var syndrome = calculateSyndrome(hammingCode);
+        document.getElementById("syndrome").value = syndrome;
+    }
+
+    function calculateSyndrome(hammingCode) {
+        var n = hammingCode.length;
+        var m = Math.log2(n + 1);
+        var syndrome = new Array(m).fill(0);
+
+        for (var i = 0; i < m; i++) {
+            var parityPos = Math.pow(2, i) - 1;
+            var parity = 0;
+            for (var k = parityPos; k < hammingCode.length; k += (parityPos + 1) * 2) {
+                for (var l = k; l < k + parityPos + 1 && l < hammingCode.length; l++) {
+                    parity ^= parseInt(hammingCode.charAt(l));
+                }
+            }
+            syndrome[i] = parity;
+        }
+
+        var syndromeValue = parseInt(syndrome.reverse().join(''), 2);
+        return syndromeValue == 0 ? "No error" : "Error at position " + syndromeValue;
+    }
+</script>
+</body>
+</html>
